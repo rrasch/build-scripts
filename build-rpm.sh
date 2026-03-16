@@ -31,7 +31,13 @@ fi
 
 GIT_URL="https://github.com/rrasch/$GIT_NAME"
 
-COMMIT=$(git ls-remote $GIT_URL refs/tags/$TAG | cut -f1 | cut -c1-7)
+if [ "$TAG" = "0.0.0" ] || [ "$TAG" = "v0.0.0" ]; then
+	COMMIT=$(git rev-parse --short HEAD)
+	PROD_BUILD=0
+else
+	COMMIT=$(git ls-remote $GIT_URL refs/tags/$TAG | cut -f1 | cut -c1-7)
+	PROD_BUILD=1
+fi
 
 if [ -z "$COMMIT" ]; then
 	echo "ERROR: Tag '$TAG' not found in repository '$GIT_URL'" >&2
@@ -67,6 +73,9 @@ sudo dnf -y remove $GIT_NAME
 
 sudo dnf -y install $RPM_DIR/$GIT_NAME-*rpm
 
-rsync -avz -e ssh $RPM_DIR/$GIT_NAME-*.rpm $REPO_HOST:$RPM_DIR
+createrepo --update $REPO_DIR
 
-ssh $REPO_HOST createrepo --update $REPO_DIR
+if (( PROD_BUILD )); then
+	rsync -avz -e ssh $RPM_DIR/$GIT_NAME-*.rpm $REPO_HOST:$RPM_DIR
+	ssh $REPO_HOST createrepo --update $REPO_DIR
+fi
