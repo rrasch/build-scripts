@@ -51,7 +51,11 @@ echo "  Commit: $COMMIT"
 
 source /etc/os-release
 
-VERSION="$(echo ${VERSION_ID} | grep -Eo '^[0-9]')"
+if [[ "$ID" == "rhel" ]]; then
+    VERSION="${VERSION_ID%%.*}"   # major only
+else
+    VERSION="$VERSION_ID"         # full version (Fedora, etc.)
+fi
 
 OSVER="${ID}${VERSION}"
 
